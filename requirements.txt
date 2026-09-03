@@ -1,0 +1,3 @@
+alexapy>=1.25.0
+python-dotenv>=1.0.0
+windows-toasts>=1.3.0

@@ -1,0 +1,5 @@
+.env
+.alexa_cookies/
+alexadnd.log
+__pycache__/
+*.pyc
