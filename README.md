@@ -79,11 +79,16 @@ profile, and can't prompt you if a reauth is ever needed. A scheduled task
 set to run at logon stays in your normal user session (so it can see
 `.alexa_cookies/`) while running with no visible window.
 
-Launching `main.py` with `pythonw.exe` (below) hides the window entirely.
-With no console attached, there's nothing to show what's happening, so
-`main.py` always writes to `alexadnd.log` next to it, in addition to the
-console when one exists. Check that file to confirm it's running or to
-debug a problem.
+Point Task Scheduler at `pythonw.exe`, not `python.exe`. `python.exe` is a
+console app, so pointing Task Scheduler at it (an easy mistake, since it's
+what step 1 below finds first) opens a visible terminal window every time
+the task runs. `pythonw.exe`, in the same folder, is the windowless
+variant built for exactly this.
+
+With no console attached, there's also nothing to show what's happening,
+so `main.py` always writes to `alexadnd.log` next to it, in addition to
+the console when one exists. Check that file to confirm it's running or
+to debug a problem.
 
 1. Find your Python install path:
    ```
@@ -104,7 +109,11 @@ debug a problem.
    AC power" if this is a laptop.
 7. Save. Right-click the task > *Run* to test it, then check
    `alexadnd.log`, Task Manager for a `pythonw.exe` process, or your Echo
-   device's DND state when you open your webcam.
+   device's DND state when you open your webcam. No window should appear
+   at any point.
+
+If you already have a task pointed at `python.exe`, edit its Actions tab
+to point at `pythonw.exe` instead of recreating the whole task.
 
 ## Troubleshooting
 
