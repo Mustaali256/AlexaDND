@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import ctypes
 import logging
+import subprocess
 import threading
 from ctypes import wintypes
 from typing import Callable
@@ -47,6 +48,29 @@ def _entry_in_use(key: winreg.HKEYType) -> bool:
     return bool(start) and not stop
 
 
+def _process_running(image_name: str) -> bool:
+    """Return True if a process with this exact image name is running.
+
+    If an app is force-closed, crashes, or the PC is restarted while it
+    holds the webcam open, Windows can leave LastUsedTimeStop at 0 forever
+    for that app, permanently marking the webcam "in use" even though
+    nothing is actually using it. This cross-check catches that: a
+    NonPackaged entry only counts as in use if its owning process is
+    actually still running.
+    """
+    try:
+        result = subprocess.run(
+            ["tasklist", "/fo", "csv", "/nh", "/fi", f"imagename eq {image_name}"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            creationflags=subprocess.CREATE_NO_WINDOW,
+        )
+    except OSError:
+        return True  # can't check; assume running rather than wrongly clear DND
+    return image_name.lower() in result.stdout.lower()
+
+
 def is_webcam_in_use() -> bool:
     """Return True if any app is currently holding the webcam open."""
     try:
@@ -64,7 +88,10 @@ def is_webcam_in_use() -> bool:
                 with nonpackaged:
                     for exe_name in _subkey_names(nonpackaged):
                         with winreg.OpenKey(nonpackaged, exe_name) as exe_key:
-                            if _entry_in_use(exe_key):
+                            if not _entry_in_use(exe_key):
+                                continue
+                            image_name = exe_name.replace("#", "\\").rsplit("\\", 1)[-1]
+                            if _process_running(image_name):
                                 return True
                 continue
 
